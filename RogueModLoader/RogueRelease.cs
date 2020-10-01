@@ -54,6 +54,8 @@ namespace RogueModLoader
 			if (description != null)
 				xml.WriteElementString("description", description);
 
+			xml.WriteElementString("filename", FileName);
+
 			xml.WriteElementString("url", DownloadURL.ToString());
 		}
 		public void ReadXml(XmlReader xml)
@@ -74,6 +76,8 @@ namespace RogueModLoader
 						Description = xml.ReadElementContentAsString();
 					else if (xml.Name == "url")
 						DownloadURL = new Uri(xml.ReadElementContentAsString());
+					else if (xml.Name == "filename")
+						FileName = xml.ReadElementContentAsString();
 					else
 						xml.Skip();
 					xml.MoveToContent();

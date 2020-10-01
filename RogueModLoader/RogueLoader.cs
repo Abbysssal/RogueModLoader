@@ -26,6 +26,8 @@ namespace RogueModLoader
 			RepoName = split[1];
 			ConfigPath = configPath;
 			GitHub = new GitHubClient(new ProductHeaderValue("RogueModLoader", "0.1"));
+
+			ReadXmlData();
 		}
 
 		public DirectoryHandle GameRootDirectory { get; }
@@ -44,7 +46,7 @@ namespace RogueModLoader
 		}
 
 		public FileHandle RogueDataFile { get; }
-		public RogueData Data { get; set; }
+		public RogueData Data { get; set; } = new RogueData();
 
 		private readonly object writing = new object();
 		public void ReadXmlData()
@@ -56,12 +58,21 @@ namespace RogueModLoader
 				{
 					using (XmlReader reader = XmlReader.Create(RogueDataFile.FullPath))
 						Data = (RogueData)ser.Deserialize(reader);
+					foreach (RogueMod mod in Data.Mods)
+					{
+						mod.Loader = this;
+						mod.CheckFile();
+					}
 				}
 				catch
 				{
-					Data = new RogueData();
+					using (XmlWriter writer = XmlWriter.Create(RogueDataFile.FullPath))
+						ser.Serialize(writer, Data);
 				}
 			}
+			else
+				using (XmlWriter writer = XmlWriter.Create(RogueDataFile.FullPath))
+					ser.Serialize(writer, Data);
 			Data.Loader = this;
 		}
 		public void WriteXmlData()
@@ -109,15 +120,44 @@ namespace RogueModLoader
 			{
 				file.Delete();
 			}
-
+			WriteXmlData();
 		}
 
 		public List<RogueDownload> CurrentDownloads { get; } = new List<RogueDownload>();
-		public bool RemoveCompleted() => CurrentDownloads.RemoveAll(d => d.Complete || d.Task.IsCompleted) > -1;
-		public bool Complete => RemoveCompleted() && CurrentDownloads.All(d => d.Complete);
-		public long BytesReceived => RemoveCompleted() ? CurrentDownloads.Sum(d => d.BytesReceived) : 0L;
-		public long BytesTotal => RemoveCompleted() ? CurrentDownloads.Sum(d => d.BytesTotal) : 0L;
-		public double DownloadPercentage => (double)BytesReceived / BytesTotal * 100d;
+		public void RemoveCompleted() => CurrentDownloads.RemoveAll(d => d.Complete || d.Task.IsCompleted);
+		public bool Complete
+		{
+			get
+			{
+				RemoveCompleted();
+				return CurrentDownloads.All(d => d.Complete);
+			}
+		}
+		public long BytesReceived
+		{
+			get
+			{
+				RemoveCompleted();
+				return CurrentDownloads.Sum(d => d.BytesReceived);
+			}
+		}
+		public long BytesTotal
+		{
+			get
+			{
+				RemoveCompleted();
+				return CurrentDownloads.Sum(d => d.BytesTotal);
+			}
+		}
+		public double DownloadPercentage
+		{
+			get
+			{
+				long received = BytesReceived;
+				if (received == 0) return 0d;
+				return (double)received / BytesTotal * 100d;
+			}
+		}
 
 	}
 	[XmlRoot("data")]
@@ -224,7 +264,7 @@ namespace RogueModLoader
 		public bool Complete;
 		public long BytesReceived;
 		public long BytesTotal;
-		public double DownloadPercentage => ((double)BytesReceived / BytesTotal) * 100;
+		public double DownloadPercentage => BytesReceived == 0 ? 0 : (double)BytesReceived / BytesTotal * 100;
 
 		private void Web_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
 		{
@@ -236,6 +276,7 @@ namespace RogueModLoader
 			Complete = true;
 			WebClient.DownloadProgressChanged -= Web_DownloadProgressChanged;
 			WebClient.DownloadFileCompleted -= Web_DownloadFileCompleted;
+			Mod.Loader.CurrentDownloads.Remove(this);
 			Mod.Loader.WriteXmlData();
 		}
 

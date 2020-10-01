@@ -32,7 +32,7 @@ namespace RogueModLoader
 		}
 
 		public static DirectoryHandle GetSteamGameDirectory(string gameName)
-			=> new DirectoryHandle(Path.Combine(steamDirectory.FullPath, "steamapps", "common", gameName));
+			=> new DirectoryHandle(Path.Combine(SteamDirectory.FullPath, "steamapps", "common", gameName));
 
 	}
 }

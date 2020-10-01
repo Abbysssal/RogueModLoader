@@ -142,7 +142,6 @@ namespace RogueModLoader
 				}
 				xml.ReadEndElement();
 			}
-			CheckFile();
 		}
 
 		public void StartDownload(RogueRelease release)
@@ -203,6 +202,7 @@ namespace RogueModLoader
 				}
 
 			}
+			Loader.WriteXmlData();
 		}
 
 		public System.Xml.Schema.XmlSchema GetSchema() => null;
