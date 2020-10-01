@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RogueModLoader\RogueModLoader.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="AbbLab.FileSystem">
+      <HintPath>..\..\AbbLab\AbbLab.FileSystem\bin\Debug\netstandard1.3\AbbLab.FileSystem.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

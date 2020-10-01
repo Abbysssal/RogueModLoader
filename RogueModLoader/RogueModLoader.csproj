@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
+    <PackageReference Include="Octokit" Version="0.48.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="AbbLab.FileSystem">
+      <HintPath>..\..\AbbLab\AbbLab.FileSystem\bin\Debug\netstandard1.3\AbbLab.FileSystem.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
