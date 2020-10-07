@@ -6,12 +6,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RogueModLoader\RogueModLoader.csproj" />
+    <ProjectReference Include="..\RogueModLoader.Core\RogueModLoader.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="AbbLab.CLI">
+      <HintPath>..\..\AbbLab\AbbLab.CLI\bin\Debug\netstandard2.0\AbbLab.CLI.dll</HintPath>
+    </Reference>
     <Reference Include="AbbLab.FileSystem">
       <HintPath>..\..\AbbLab\AbbLab.FileSystem\bin\Debug\netstandard1.3\AbbLab.FileSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="AbbLab.Utilities">
+      <HintPath>..\..\AbbLab\AbbLab.CLI\bin\Debug\netstandard2.0\AbbLab.Utilities.dll</HintPath>
     </Reference>
   </ItemGroup>
 

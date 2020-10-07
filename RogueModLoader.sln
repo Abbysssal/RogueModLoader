@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RogueModLoader", "RogueModLoader\RogueModLoader.csproj", "{7BA66B48-26E1-428E-AE37-052D4EFB4F44}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RogueModLoader.Core", "RogueModLoader.Core\RogueModLoader.Core.csproj", "{C1741705-22F2-457A-868D-8AF50980244F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModsOfRogue.ConsoleApp", "ModsOfRogue.ConsoleApp\ModsOfRogue.ConsoleApp.csproj", "{3FBB4D39-BFFD-4E39-92C7-B5CE4EB2F6CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RogueModLoader.ConsoleApp", "RogueModLoader.ConsoleApp\RogueModLoader.ConsoleApp.csproj", "{5C3A08DB-5753-4AE3-AE4F-E2E2622CFB6F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7BA66B48-26E1-428E-AE37-052D4EFB4F44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7BA66B48-26E1-428E-AE37-052D4EFB4F44}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7BA66B48-26E1-428E-AE37-052D4EFB4F44}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7BA66B48-26E1-428E-AE37-052D4EFB4F44}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3FBB4D39-BFFD-4E39-92C7-B5CE4EB2F6CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3FBB4D39-BFFD-4E39-92C7-B5CE4EB2F6CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3FBB4D39-BFFD-4E39-92C7-B5CE4EB2F6CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3FBB4D39-BFFD-4E39-92C7-B5CE4EB2F6CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1741705-22F2-457A-868D-8AF50980244F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1741705-22F2-457A-868D-8AF50980244F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1741705-22F2-457A-868D-8AF50980244F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1741705-22F2-457A-868D-8AF50980244F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C3A08DB-5753-4AE3-AE4F-E2E2622CFB6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C3A08DB-5753-4AE3-AE4F-E2E2622CFB6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C3A08DB-5753-4AE3-AE4F-E2E2622CFB6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C3A08DB-5753-4AE3-AE4F-E2E2622CFB6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

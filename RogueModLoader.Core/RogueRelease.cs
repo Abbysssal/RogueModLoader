@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace RogueModLoader
+namespace RogueModLoaderCore
 {
 	[XmlRoot("release")]
 	public class RogueRelease : IXmlSerializable

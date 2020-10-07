@@ -8,8 +8,10 @@ using System.Xml;
 using System.Xml.Serialization;
 using AbbLab.FileSystem;
 using Octokit;
+using System.Linq;
+using System.Globalization;
 
-namespace RogueModLoader
+namespace RogueModLoaderCore
 {
 	[XmlRoot("mod")]
 	public class RogueMod : IXmlSerializable
@@ -34,6 +36,8 @@ namespace RogueModLoader
 		public int Watchers { get; set; }
 		public int Downloads { get; set; }
 
+		public DateTime LastCheck { get; set; }
+
 		public FileHandle File { get; set; }
 		public List<RogueRelease> Releases { get; } = new List<RogueRelease>();
 		public string CurrentTag { get; set; }
@@ -49,8 +53,8 @@ namespace RogueModLoader
 				RogueRelease release = Current ?? GetLatest(Current?.Prerelease ?? false);
 				if (release != null) // find by current/latest release's file
 				{
-					FileHandle pluginFile = new FileHandle(Path.Combine(Loader.PluginsFolder.FullPath, release.FileName));
-					FileHandle disabledFile = new FileHandle(Path.Combine(Loader.DisabledFolder.FullPath, release.FileName));
+					FileHandle pluginFile = new FileHandle(Loader.PluginsFolder, release.FileName);
+					FileHandle disabledFile = new FileHandle(Loader.DisabledFolder, release.FileName);
 					bool found = false;
 					if (pluginFile.Exists()) { File = pluginFile; found = true; }
 					if (disabledFile.Exists())
@@ -72,6 +76,8 @@ namespace RogueModLoader
 			xml.WriteElementString("stars", Stars.ToString());
 			xml.WriteElementString("watchers", Watchers.ToString());
 			xml.WriteElementString("downloads", Downloads.ToString());
+
+			xml.WriteElementString("lastCheck", LastCheck.ToString(CultureInfo.InvariantCulture));
 
 			CheckFile();
 			if (File?.Exists() == true) xml.WriteElementString("path", File.FullPath);
@@ -120,6 +126,10 @@ namespace RogueModLoader
 					{
 						File = new FileHandle(xml.ReadElementContentAsString());
 					}
+					else if (xml.Name == "lastCheck")
+					{
+						LastCheck = DateTime.Parse(xml.ReadElementContentAsString(), CultureInfo.InvariantCulture);
+					}
 					else if (xml.Name == "releases")
 					{
 						if (xml.ReadNonEmptyElement())
@@ -163,11 +173,16 @@ namespace RogueModLoader
 			CurrentTag = null;
 		}
 
+		public void Enable() => File.MoveTo(Loader.PluginsFolder);
+		public void Disable() => File.MoveTo(Loader.DisabledFolder);
+
 		public ModState GetState() => File?.Exists() != true ? ModState.NotInstalled // "Download" button
 			: Current == null ? ModState.UnknownVersion // "Fix/Update" button
 			: File.Parent.Name != "plugins" ? ModState.Disabled // "Uninstall" button
 			: CurrentTag != GetLatest(Current.Prerelease).Tag ? ModState.HasUpdate // "Update" button
 			: ModState.Enabled; // "Up To Date" label
+
+		public bool IsEnabled() => (File?.Exists() ?? false) && File.Parent?.Name == "plugins";
 
 		private bool updating = false;
 		private bool[] updateSession = new bool[2];
@@ -200,8 +215,10 @@ namespace RogueModLoader
 					Downloads += release.Assets[0].DownloadCount;
 					Releases.Add(rogue);
 				}
-
+				CheckFile();
 			}
+			LastCheck = DateTime.Now;
+			updating = false;
 			Loader.WriteXmlData();
 		}
 

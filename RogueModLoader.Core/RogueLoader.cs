@@ -9,17 +9,17 @@ using System.Xml.Serialization;
 using System.Linq;
 using System.Net;
 
-namespace RogueModLoader
+namespace RogueModLoaderCore
 {
 	public class RogueLoader
 	{
 		public RogueLoader(DirectoryHandle gameRootDirectory, string repo, string configPath)
 		{
 			GameRootDirectory = gameRootDirectory;
-			BepInExDirectory = new DirectoryHandle(Path.Combine(gameRootDirectory.FullPath, "BepInEx"));
-			PluginsFolder = new DirectoryHandle(Path.Combine(BepInExDirectory.FullPath, "plugins"));
-			DisabledFolder = new DirectoryHandle(Path.Combine(BepInExDirectory.FullPath, "disabled-plugins"));
-			RogueDataFile = new FileHandle(Path.Combine(BepInExDirectory.FullPath, "RogueModLoader.Data.rml"));
+			BepInExDirectory = new DirectoryHandle(gameRootDirectory, "BepInEx");
+			PluginsFolder = new DirectoryHandle(BepInExDirectory, "plugins");
+			DisabledFolder = new DirectoryHandle(BepInExDirectory, "disabled-plugins");
+			RogueDataFile = new FileHandle(BepInExDirectory, "RogueModLoader.Data.rml");
 			string[] split = repo?.Split(new char[] { '/' }, 2);
 			if (split == null || split.Length < 2) throw new ArgumentException("Invalid repository format!");
 			RepoOwner = split[0];
@@ -27,25 +27,25 @@ namespace RogueModLoader
 			ConfigPath = configPath;
 			GitHub = new GitHubClient(new ProductHeaderValue("RogueModLoader", "0.1"));
 
-			ReadXmlData();
 		}
+		public void Start() => ReadXmlData();
 
-		public DirectoryHandle GameRootDirectory { get; }
-		public DirectoryHandle BepInExDirectory { get; }
-		public DirectoryHandle PluginsFolder { get; }
-		public DirectoryHandle DisabledFolder { get; }
+		public DirectoryHandle GameRootDirectory { get; set; }
+		public DirectoryHandle BepInExDirectory { get; set; }
+		public DirectoryHandle PluginsFolder { get; set; }
+		public DirectoryHandle DisabledFolder { get; set; }
 		public string RepoOwner { get; }
 		public string RepoName { get; }
-		public string ConfigPath { get; }
+		public string ConfigPath { get; set; }
 
-		public GitHubClient GitHub { get; }
+		public GitHubClient GitHub { get; set; }
 		public bool CanRequest(int requests)
 		{
 			ApiInfo info = GitHub.GetLastApiInfo();
 			return info == null || requests <= info.RateLimit.Remaining;
 		}
 
-		public FileHandle RogueDataFile { get; }
+		public FileHandle RogueDataFile { get; set; }
 		public RogueData Data { get; set; } = new RogueData();
 
 		private readonly object writing = new object();
@@ -91,7 +91,7 @@ namespace RogueModLoader
 			if (contentList.Count < 1) throw new ArgumentException("Config file not found!");
 			RepositoryContent content = contentList[0];
 			if (content.Type.Value != ContentType.File) throw new ArgumentException("An entry at the specified path is not a file!");
-			FileHandle file = new FileHandle(Path.Combine(BepInExDirectory.FullPath, "RogueModLoader.List.rml"));
+			FileHandle file = new FileHandle(BepInExDirectory, "RogueModLoader.List.rml");
 			WebClient web = new WebClient();
 			await web.DownloadFileTaskAsync(content.DownloadUrl, file.FullPath);
 
@@ -102,6 +102,9 @@ namespace RogueModLoader
 				using (XmlReader reader = XmlReader.Create(file.FullPath))
 					list = (RogueModsList)ser.Deserialize(reader);
 
+				Dictionary<string, string> mod2ver = new Dictionary<string, string>();
+				foreach (RogueMod oldMod in Data.Mods)
+					mod2ver.Add(oldMod.RepoOwner + "/" + oldMod.RepoName, oldMod.CurrentTag);
 				Data.Mods.Clear();
 				foreach ((string, string) repo in list.Repos)
 				{
@@ -111,6 +114,8 @@ namespace RogueModLoader
 						RepoName = repo.Item2
 					};
 					await mod.FetchInformation();
+					if (mod2ver.TryGetValue(repo.Item1 + "/" + repo.Item2, out string currentTag))
+						mod.CurrentTag = currentTag;
 					if (mod.Releases.Count > 0)
 						Data.Mods.Add(mod);
 				}
