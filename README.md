@@ -59,7 +59,7 @@
 
 ## Configuration ##
 
-In order to configure RogueModLoader to work with any other game supported by BepInEx, you need to edit the RogueModLoader.Config.rml file:
+In order to configure RogueModLoader to work with any other game supported by BepInEx, you just need to edit some of the files. Let's look at the RogueModLoader.Config.rml file:
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <RogueModLoaderConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
