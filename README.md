@@ -26,7 +26,7 @@
 ## Installation ##
 1.  Install BepInEx:
     1.  [Download the latest version of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest);
-    2.  Drag all files from the archive into directory /Steam/SteamApps/common/<game>/;
+    2.  Drag all files from the archive into directory /Steam/SteamApps/common/\<game>/;
     3.  Run the game, so BepInEx can create needed files and directories, and close the game;
 3.  [Download the latest version of RogueModLoader](https://github.com/Abbysssal/RogueModLoader/releases/latest);
 4.  Move the contents of the archive to the game root directory;
