@@ -79,6 +79,7 @@ Now let's look at RogueModLoader.List.rml:
   <repository>Abbysssal/ECTD</repository>
   <repository>Abbysssal/aToM</repository>
   <repository>Abbysssal/aToI</repository>
+  <repository>Moonkis/SoRFramerateLimiter</repository>
 </repositories>
 ```
 It's just a list of mod repositories, that you want to include in your RogueModLoader.

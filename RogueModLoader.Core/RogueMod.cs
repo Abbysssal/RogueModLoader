@@ -54,8 +54,10 @@ namespace RogueModLoader.Core
 				RogueRelease release = Current ?? GetLatest(Current?.Prerelease ?? false);
 				if (release != null) // find by current/latest release's file
 				{
-					FileHandle pluginFile = new FileHandle(Loader.PluginsFolder, release.FileName);
-					FileHandle disabledFile = new FileHandle(Loader.DisabledFolder, release.FileName);
+					string fileName = release.FileName.ToUpperInvariant().EndsWith(".ZIP") ? File?.FullName : release.FileName;
+					if (fileName == null) return;
+					FileHandle pluginFile = new FileHandle(Loader.PluginsFolder, fileName);
+					FileHandle disabledFile = new FileHandle(Loader.DisabledFolder, fileName);
 					bool found = false;
 					if (pluginFile.Exists()) { File = pluginFile; found = true; }
 					if (disabledFile.Exists())

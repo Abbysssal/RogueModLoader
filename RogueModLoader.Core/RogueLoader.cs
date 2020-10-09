@@ -7,6 +7,8 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.Linq;
 using System.Net;
+using System.IO.Compression;
+using System.IO;
 
 namespace RogueModLoader.Core
 {
@@ -94,7 +96,7 @@ namespace RogueModLoader.Core
 			foreach (FileHandle file in PluginsFolder.EnumerateFiles().Concat(DisabledFolder.EnumerateFiles()))
 			{
 				if (file.Extension != ".dll") continue;
-				RogueMod mod = Data.Mods.Find(m => m.File.FullPath == file.FullPath);
+				RogueMod mod = Data.Mods.Find(m => m.File?.FullPath == file.FullPath);
 				if (mod == null)
 				{
 					RogueMod newMod = new RogueMod(this)
@@ -126,8 +128,12 @@ namespace RogueModLoader.Core
 					list = (RogueModsList)ser.Deserialize(reader);
 
 				Dictionary<string, string> mod2ver = new Dictionary<string, string>();
+				Dictionary<string, string> mod2path = new Dictionary<string, string>();
 				foreach (RogueMod oldMod in Data.Mods.Where(m => !m.IsLocal))
+				{
 					mod2ver.Add(oldMod.RepoOwner + "/" + oldMod.RepoName, oldMod.CurrentTag);
+					mod2path.Add(oldMod.RepoOwner + "/" + oldMod.RepoName, oldMod.File?.FullPath);
+				}
 				Data.Mods.Clear();
 				foreach ((string, string) repo in list.Repos)
 				{
@@ -139,6 +145,8 @@ namespace RogueModLoader.Core
 					await mod.FetchInformation();
 					if (mod2ver.TryGetValue(repo.Item1 + "/" + repo.Item2, out string currentTag))
 						mod.CurrentTag = currentTag;
+					if (mod.File == null && mod2path.TryGetValue(repo.Item1 + "/" + repo.Item2, out string lastPath))
+						mod.File = new FileHandle(lastPath);
 					if (mod.Releases.Count > 0)
 						Data.Mods.Add(mod);
 				}
@@ -306,6 +314,28 @@ namespace RogueModLoader.Core
 			WebClient.DownloadProgressChanged -= Web_DownloadProgressChanged;
 			WebClient.DownloadFileCompleted -= Web_DownloadFileCompleted;
 			Mod.Loader.CurrentDownloads.Remove(this);
+			if (Mod.File.Extension.ToUpperInvariant() == ".ZIP")
+			{
+				FileHandle file;
+				using (FileStream fileStream = Mod.File.OpenRead())
+				{
+					using (ZipArchive archive = new ZipArchive(fileStream))
+					{
+						ZipArchiveEntry dllEntry = null;
+						foreach (ZipArchiveEntry entry in archive.Entries)
+							if (entry.Name.ToUpperInvariant().EndsWith(".DLL"))
+							{
+								dllEntry = entry;
+								break;
+							}
+						if (dllEntry == null) throw new ArgumentException("The .zip archive does not have any .dll files!");
+						file = new FileHandle(Mod.File.Parent, dllEntry.Name);
+						dllEntry.ExtractToFile(file.FullPath, true);
+					}
+				}
+				Mod.File.Delete();
+				Mod.File = file;
+			}
 			Mod.Loader.WriteXmlData();
 		}
 
