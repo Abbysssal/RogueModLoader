@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using RogueModLoaderCore;
 using AbbLab.FileSystem;
 using AbbLab.CLI;
 using System.Xml.Serialization;
 using System.Xml;
-using System.Globalization;
 using System.Linq;
-using AbbLab.Utilities;
 using System.Threading;
+using System.Data;
 
 namespace RogueModLoader.ConsoleApp
 {
@@ -18,21 +15,18 @@ namespace RogueModLoader.ConsoleApp
 	{
 		public static void Main(/*string[] args*/)
 		{
+			App = new CLIApp();
+			App.Start();
+			RMLDirectory =
 #if DEBUG
-			RMLDirectory = new DirectoryHandle(@"D:\Steam\steamapps\common\Streets of Rogue\RogueModLoader");
+				new DirectoryHandle(@"D:\Steam\steamapps\common\Streets of Rogue\RogueModLoader");
+			App.WriteLine("<back=darkcyan><fore=black>THIS IS DEBUG MODE");
 #else
-			RMLDirectory = new DirectoryHandle(Directory.GetCurrentDirectory());
+				new DirectoryHandle(Directory.GetCurrentDirectory());
 #endif
 			GameDirectory = RMLDirectory.Parent;
 			BIXDirectory = new DirectoryHandle(GameDirectory, "BepInEx");
 			ConfigFile = new FileHandle(RMLDirectory, "RogueModLoader.Config.rml");
-
-			App = new CLIApp();
-			App.Start();
-
-#if DEBUG
-			App.WriteLine("<back=cyan>DEBUG MODE");
-#endif
 
 			CLIInputUpdater input = new CLIInputUpdater(":> ");
 			App.AddUpdater(input);
@@ -76,8 +70,10 @@ namespace RogueModLoader.ConsoleApp
 			{
 				RogueDataFile = new FileHandle(RMLDirectory, "RogueModLoader.Data.rml")
 			};
-			Loader.PluginsFolder.Create();
-			Loader.DisabledFolder.Create();
+			if (!Loader.PluginsFolder.Exists())
+				Loader.PluginsFolder.Create();
+			if (!Loader.DisabledFolder.Exists())
+				Loader.DisabledFolder.Create();
 			Loader.ReadXmlData();
 
 			if (Config.FetchOnStart)
@@ -98,6 +94,9 @@ namespace RogueModLoader.ConsoleApp
 				FetchMods();
 			}
 
+			App.WriteLine("<fore=cyan>Use <back=darkgray>help</back> to see the list of commands.");
+			App.WriteLine("");
+
 			App.Wait();
 		}
 
@@ -115,18 +114,30 @@ namespace RogueModLoader.ConsoleApp
 
 		public static bool FindMod(string query, out RogueMod mod)
 		{
+			Loader.CheckLocalFiles();
 			string uq = query.ToUpperInvariant();
-			mod = Loader.Data.Mods.Find(m => (m.RepoOwner + "/" + m.RepoName).ToUpperInvariant() == uq || m.Title.ToUpperInvariant() == uq)
-				?? Loader.Data.Mods.Find(m => (m.RepoOwner + "/" + m.RepoName).ToUpperInvariant().StartsWith(uq) || m.Title.ToUpperInvariant().StartsWith(uq))
-				?? Loader.Data.Mods.Find(m => (m.RepoOwner + "/" + m.RepoName).ToUpperInvariant().Contains(uq) || m.Title.ToUpperInvariant().Contains(uq));
-			if (mod == null)
+			List<RogueMod> found = Loader.Data.Mods.FindAll(m => m.Title.ToUpperInvariant() == uq || m.Repository.ToUpperInvariant() == uq);
+			if (found.Count == 0) found = Loader.Data.Mods.FindAll(m => m.Title.ToUpperInvariant().StartsWith(uq) || m.Repository.ToUpperInvariant().StartsWith(uq));
+			if (found.Count == 0) found = Loader.Data.Mods.FindAll(m => m.Title.ToUpperInvariant().Contains(uq) || m.Repository.ToUpperInvariant().Contains(uq));
+			if (found.Count == 0)
 			{
+				mod = null;
 				App.WriteLine("<fore=red>Could not find a mod \"" + query + "\"!");
 				App.WriteLine("<fore=cyan>Use <back=darkgray>list</back> to show the list of available mods.");
-				confirmSent = false;
-				return false;
+				return confirmSent = false;
 			}
-			return true;
+			else if (found.Count == 1)
+			{
+				mod = found[0];
+				return true;
+			}
+			else
+			{
+				mod = null;
+				App.WriteLine("<fore=red>Found " + found.Count + " mods \"" + query + "\"!");
+				App.WriteLine("<fore=red>: " + found[0].Title + ", " + found[1].Title + (found.Count > 2 ? ", " + found[2].Title : "") + (found.Count > 3 ? "..." : ""));
+				return confirmSent = false;
+			}
 		}
 
 		[CLICommand("help", "h")]
@@ -183,6 +194,12 @@ namespace RogueModLoader.ConsoleApp
 		{
 			if (FindMod(modStr, out RogueMod mod))
 			{
+				if (mod.IsLocal)
+				{
+					App.WriteLine("<fore=red>" + mod.Title + " is local!");
+					return;
+				}
+
 				TimeSpan span = DateTime.Now - mod.LastCheck;
 				if (span.TotalMinutes < 10 && !confirmSent)
 				{
@@ -213,6 +230,7 @@ namespace RogueModLoader.ConsoleApp
 		[CLICommand("list", "l")]
 		public static void ListMods(int page = 1)
 		{
+			Loader.CheckLocalFiles();
 			if (Loader.Data.Mods.Count == 0)
 				App.WriteLine("<fore=red>No mods available! Try <back=darkgray>fetch</back> to fetch mods' metadata from the main repository.");
 			else
@@ -221,11 +239,29 @@ namespace RogueModLoader.ConsoleApp
 				int minIndex = itemsPerPage * (page - 1);
 				int maxIndex = itemsPerPage * page;
 
+				Loader.Data.Mods.Sort((a, b) =>
+				{
+					if (a.IsLocal) return 1;
+					if (a.IsEnabled() && !b.IsEnabled())
+						return -1;
+					else if (!a.IsEnabled() && b.IsEnabled())
+						return 1;
+					return a.Title.CompareTo(b.Title);
+				});
+
 				for (int i = minIndex; i < maxIndex && i < Loader.Data.Mods.Count; i++)
 				{
 					RogueMod mod = Loader.Data.Mods[i];
 
-					string modName = mod.Title ?? mod.RepoOwner + "/" + mod.RepoName;
+					string modName = mod.Title ?? mod.Repository;
+					if (mod.IsLocal)
+					{
+						if (mod.IsEnabled())
+							App.WriteLine("<fore=darkcyan>" + modName + " (local)");
+						else
+							App.WriteLine("<fore=darkgray>" + modName + " (local, disabled)");
+						continue;
+					}
 					ModState state = mod.GetState();
 					string currentStr = mod.Current?.Tag;
 					string latestStr = mod.GetLatest(mod.Current?.Prerelease ?? false).Tag;
@@ -239,11 +275,12 @@ namespace RogueModLoader.ConsoleApp
 						App.WriteLine(modName + " (" + currentStr + "<" + latestStr + ") - <fore=yellow>has an update!</fore>");
 					else
 						App.WriteLine(modName + " (" + currentStr + ") - <fore=green>up to date");
-
-					int totalPages = (int)Math.Ceiling((double)Loader.Data.Mods.Count / itemsPerPage);
-					if (Loader.Data.Mods.Count > itemsPerPage || page != 1)
-						App.WriteLine("<fore=cyan>--- Page " + page + "/" + totalPages + " (" + (minIndex + 1) + "-" + Math.Min(maxIndex, Loader.Data.Mods.Count) + ")");
 				}
+
+				int totalPages = (int)Math.Ceiling((double)Loader.Data.Mods.Count / itemsPerPage);
+				if (Loader.Data.Mods.Count > itemsPerPage || page != 1)
+					App.WriteLine("<fore=cyan>--- Page " + page + "/" + totalPages + " (" + (minIndex + 1) + "-" + Math.Min(maxIndex, Loader.Data.Mods.Count) + ")");
+				App.WriteLine("");
 			}
 
 		}
@@ -252,6 +289,12 @@ namespace RogueModLoader.ConsoleApp
 		{
 			if (FindMod(modStr, out RogueMod mod))
 			{
+				if (mod.IsLocal)
+				{
+					App.WriteLine("<fore=red>" + mod.Title + " is local!");
+					return;
+				}
+
 				App.WriteLine("<fore=cyan>" + mod.Releases.Count + " " + mod.Title + " releases are available:");
 				int minIndex = itemsPerPage * (page - 1);
 				int maxIndex = itemsPerPage * page;
@@ -265,6 +308,7 @@ namespace RogueModLoader.ConsoleApp
 				int totalPages = (int)Math.Ceiling((double)mod.Releases.Count / itemsPerPage);
 				if (mod.Releases.Count > itemsPerPage || page != 1)
 					App.WriteLine("<fore=cyan>--- Page " + page + "/" + totalPages + " (" + (minIndex + 1) + "-" + Math.Min(maxIndex, mod.Releases.Count) + ")");
+				App.WriteLine("");
 			}
 
 		}
@@ -274,6 +318,12 @@ namespace RogueModLoader.ConsoleApp
 		{
 			if (FindMod(modStr, out RogueMod mod))
 			{
+				if (mod.IsLocal)
+				{
+					App.WriteLine("<fore=red>" + mod.Title + " is local!");
+					return;
+				}
+
 				bool showRepo = mod.Title != mod.RepoOwner + "/" + mod.RepoName;
 				App.WriteLine("<fore=cyan>" + mod.Title + (showRepo ? " (" + mod.RepoOwner + "/" + mod.RepoName + ")" : ""));
 				ModState state = mod.GetState();
@@ -291,6 +341,7 @@ namespace RogueModLoader.ConsoleApp
 				App.WriteLine("<fore=cyan>Downloads: " + mod.Downloads);
 				App.WriteLine("<fore=cyan>Watchers: " + mod.Watchers);
 				App.WriteLine("<fore=cyan>Stars: " + mod.Stars);
+				App.WriteLine("");
 			}
 
 		}
@@ -301,6 +352,12 @@ namespace RogueModLoader.ConsoleApp
 			confirmSent = false;
 			if (FindMod(modStr, out RogueMod mod))
 			{
+				if (mod.IsLocal)
+				{
+					App.WriteLine("<fore=red>" + mod.Title + " is local!");
+					return;
+				}
+
 				RogueRelease latest = mod.GetLatest(mod.Current?.Prerelease ?? false);
 				InstallMod(mod.RepoOwner + "/" + mod.RepoName, latest.Tag);
 			}
@@ -312,6 +369,12 @@ namespace RogueModLoader.ConsoleApp
 			confirmSent = false;
 			if (FindMod(modStr, out RogueMod mod))
 			{
+				if (mod.IsLocal)
+				{
+					App.WriteLine("<fore=red>" + mod.Title + " is local!");
+					return;
+				}
+
 				string query = modVersion.ToUpperInvariant();
 				RogueRelease found = mod.Releases.Find(r => r.Tag.ToUpperInvariant() == query || r.Title.ToUpperInvariant() == query)
 					?? mod.Releases.Find(r => r.Tag.ToUpperInvariant().StartsWith(query) || r.Title.ToUpperInvariant().StartsWith(query))
@@ -350,12 +413,22 @@ namespace RogueModLoader.ConsoleApp
 		{
 			if (FindMod(modStr, out RogueMod mod))
 			{
+				if (mod.IsLocal && !confirmSent)
+				{
+					App.WriteLine("<fore=yellow>This mod is local. You won't be able to reinstall it using RogueModLoader.");
+					App.WriteLine("<fore=yellow>Are you sure you want to delete this local mod? Enter the command again to proceed.");
+					confirmSent = true;
+					return;
+				}
+				confirmSent = false;
+
 				if (mod.GetState() == ModState.NotInstalled)
 					App.WriteLine("<fore=red>" + mod.Title + " is not installed!");
 				else
 				{
 					mod.Delete();
 					App.WriteLine("<fore=cyan>" + mod.Title + " was removed!");
+					if (mod.IsLocal) Loader.Data.Mods.Remove(mod);
 				}
 			}
 
@@ -370,7 +443,7 @@ namespace RogueModLoader.ConsoleApp
 				if (state == ModState.NotInstalled)
 					App.WriteLine("<fore=red>" + mod.Title + " is not installed!");
 				else if (mod.IsEnabled())
-					App.WriteLine("<fore=yellow>" + mod.Title + " is already enabled");
+					App.WriteLine("<fore=yellow>" + mod.Title + " is already enabled.");
 				else
 				{
 					mod.Enable();
@@ -388,7 +461,7 @@ namespace RogueModLoader.ConsoleApp
 				if (state == ModState.NotInstalled)
 					App.WriteLine("<fore=red>" + mod.Title + " is not installed!");
 				else if (!mod.IsEnabled())
-					App.WriteLine("<fore=yellow>" + mod.Title + " is already disabled");
+					App.WriteLine("<fore=yellow>" + mod.Title + " is already disabled.");
 				else
 				{
 					mod.Disable();
@@ -403,7 +476,7 @@ namespace RogueModLoader.ConsoleApp
 		{
 			confirmSent = false;
 			List<RogueMod> needUpdating = new List<RogueMod>();
-			foreach (RogueMod mod in Loader.Data.Mods)
+			foreach (RogueMod mod in Loader.Data.Mods.Where(m => !m.IsLocal))
 			{
 				if (mod.GetState() == ModState.HasUpdate || mod.GetState() == ModState.UnknownVersion)
 					needUpdating.Add(mod);
@@ -417,6 +490,12 @@ namespace RogueModLoader.ConsoleApp
 		{
 			if (FindMod(modStr, out RogueMod mod))
 			{
+				if (mod.IsLocal)
+				{
+					App.WriteLine("<fore=red>" + mod.Title + " is local!");
+					return;
+				}
+
 				confirmSent = false;
 				if (mod.GetState() == ModState.HasUpdate || mod.GetState() == ModState.UnknownVersion)
 					InstallMod(mod.RepoOwner + "/" + mod.RepoName, mod.GetLatest(mod.Current?.Prerelease ?? false).Tag);

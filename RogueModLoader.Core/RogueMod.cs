@@ -1,14 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Data;
 using System.Net;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using AbbLab.FileSystem;
 using Octokit;
-using System.Linq;
 using System.Globalization;
 
 namespace RogueModLoaderCore
@@ -27,9 +25,10 @@ namespace RogueModLoaderCore
 		private string title;
 		public string Title
 		{
-			get => title ?? RepoOwner + "/" + RepoName;
+			get => title ?? Repository;
 			set => title = value;
 		}
+		public string Repository => RepoOwner + "/" + RepoName;
 		public string Description { get; set; }
 
 		public int Stars { get; set; }
@@ -45,6 +44,8 @@ namespace RogueModLoaderCore
 		public RogueRelease GetLatest(bool includePrereleases)
 			=> includePrereleases ? Releases[0]
 			: Releases.Find(r => !r.Prerelease) ?? Releases[0];
+
+		public bool IsLocal { get; set; }
 
 		public void CheckFile()
 		{

@@ -1,7 +1,6 @@
 ﻿using AbbLab.FileSystem;
 using Octokit;
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Xml;
@@ -74,14 +73,38 @@ namespace RogueModLoaderCore
 				using (XmlWriter writer = XmlWriter.Create(RogueDataFile.FullPath))
 					ser.Serialize(writer, Data);
 			Data.Loader = this;
+			CheckLocalFiles();
 		}
 		public void WriteXmlData()
 		{
 			lock (writing)
 			{
+				List<RogueMod> locals = Data.Mods.FindAll(m => m.IsLocal);
+				Data.Mods.RemoveAll(m => m.IsLocal);
 				XmlSerializer ser = new XmlSerializer(typeof(RogueData));
 				using (XmlWriter writer = XmlWriter.Create(RogueDataFile.FullPath))
 					ser.Serialize(writer, Data);
+				Data.Mods.AddRange(locals);
+			}
+		}
+
+		public void CheckLocalFiles()
+		{
+			Data.Mods.RemoveAll(m => m.IsLocal);
+			foreach (FileHandle file in PluginsFolder.EnumerateFiles().Concat(DisabledFolder.EnumerateFiles()))
+			{
+				if (file.Extension != ".dll") continue;
+				RogueMod mod = Data.Mods.Find(m => m.File.FullPath == file.FullPath);
+				if (mod == null)
+				{
+					RogueMod newMod = new RogueMod(this)
+					{
+						Title = file.FullName,
+						IsLocal = true,
+						File = file
+					};
+					Data.Mods.Add(newMod);
+				}
 			}
 		}
 
@@ -103,7 +126,7 @@ namespace RogueModLoaderCore
 					list = (RogueModsList)ser.Deserialize(reader);
 
 				Dictionary<string, string> mod2ver = new Dictionary<string, string>();
-				foreach (RogueMod oldMod in Data.Mods)
+				foreach (RogueMod oldMod in Data.Mods.Where(m => !m.IsLocal))
 					mod2ver.Add(oldMod.RepoOwner + "/" + oldMod.RepoName, oldMod.CurrentTag);
 				Data.Mods.Clear();
 				foreach ((string, string) repo in list.Repos)
@@ -125,6 +148,7 @@ namespace RogueModLoaderCore
 			{
 				file.Delete();
 			}
+			CheckLocalFiles();
 			WriteXmlData();
 		}
 
