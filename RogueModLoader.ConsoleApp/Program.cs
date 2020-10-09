@@ -14,7 +14,7 @@ namespace RogueModLoader.ConsoleApp
 {
 	public class Program
 	{
-		private const string CurrentVersion = "v0.3";
+		private const string CurrentVersion = "v0.3.1";
 
 		public static void Main(/*string[] args*/)
 		{
@@ -77,6 +77,16 @@ namespace RogueModLoader.ConsoleApp
 				Loader.PluginsFolder.Create();
 			if (!Loader.DisabledFolder.Exists())
 				Loader.DisabledFolder.Create();
+
+			FileHandle unityNetworking = new FileHandle(GameDirectory, "StreetsOfRogue_Data", "Managed", "UnityEngine.Networking.dll");
+			FileHandle hlapiNetworking = new FileHandle(GameDirectory, "StreetsOfRogue_Data", "Managed", "com.unity.multiplayer-hlapi.Runtime.dll");
+			if (hlapiNetworking.Exists() && !unityNetworking.Exists())
+			{
+				unityNetworking = hlapiNetworking.CopyTo(unityNetworking.Parent);
+				App.WriteLine("<fore=darkcyan>Created UnityEngine.Networking.dll.");
+				App.WriteLine("<fore=darkcyan>It is required by some mods, that were made on the previous version of Unity.");
+			}
+
 			Loader.ReadXmlData();
 
 			if (Config.FetchOnStart)
