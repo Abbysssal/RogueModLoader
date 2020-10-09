@@ -132,7 +132,8 @@ namespace RogueModLoader.Core
 				foreach (RogueMod oldMod in Data.Mods.Where(m => !m.IsLocal))
 				{
 					mod2ver.Add(oldMod.RepoOwner + "/" + oldMod.RepoName, oldMod.CurrentTag);
-					mod2path.Add(oldMod.RepoOwner + "/" + oldMod.RepoName, oldMod.File?.FullPath);
+					if (oldMod.File?.Exists() == true)
+						mod2path.Add(oldMod.RepoOwner + "/" + oldMod.RepoName, oldMod.File?.FullPath);
 				}
 				Data.Mods.Clear();
 				foreach ((string, string) repo in list.Repos)

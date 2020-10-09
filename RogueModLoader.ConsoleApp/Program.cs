@@ -15,7 +15,7 @@ namespace RogueModLoader.ConsoleApp
 {
 	public class Program
 	{
-		private const string CurrentVersion = "v0.3.1";
+		private const string CurrentVersion = "v0.3.2";
 
 		public static void Main(/*string[] args*/)
 		{
