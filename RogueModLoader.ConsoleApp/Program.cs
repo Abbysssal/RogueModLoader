@@ -76,6 +76,8 @@ namespace RogueModLoader.ConsoleApp
 			{
 				RogueDataFile = new FileHandle(RMLDirectory, "RogueModLoader.Data.rml")
 			};
+			Loader.PluginsFolder.Create();
+			Loader.DisabledFolder.Create();
 			Loader.ReadXmlData();
 
 			if (Config.FetchOnStart)
