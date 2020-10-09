@@ -3,7 +3,7 @@ using System;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace RogueModLoaderCore
+namespace RogueModLoader.Core
 {
 	[XmlRoot("release")]
 	public class RogueRelease : IXmlSerializable

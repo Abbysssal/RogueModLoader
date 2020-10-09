@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using RogueModLoaderCore;
+using RogueModLoader.Core;
 using AbbLab.FileSystem;
 using AbbLab.CLI;
 using System.Xml.Serialization;
@@ -8,11 +8,14 @@ using System.Xml;
 using System.Linq;
 using System.Threading;
 using System.Data;
+using Octokit;
 
 namespace RogueModLoader.ConsoleApp
 {
 	public class Program
 	{
+		private const string CurrentVersion = "v0.2";
+
 		public static void Main(/*string[] args*/)
 		{
 			App = new CLIApp();
@@ -93,7 +96,9 @@ namespace RogueModLoader.ConsoleApp
 				confirmSent = true;
 				FetchMods();
 			}
-
+			Console.Title = "RogueModLoader.ConsoleApp " + CurrentVersion;
+			App.WriteLine("<fore=darkcyan>RogueModLoader.ConsoleApp " + CurrentVersion);
+			App.WriteLine("");
 			App.WriteLine("<fore=cyan>Use <back=darkgray>help</back> to see the list of commands.");
 			App.WriteLine("");
 
@@ -162,6 +167,7 @@ namespace RogueModLoader.ConsoleApp
 			App.WriteLine("");
 			App.WriteLine("- <fore=cyan>u|update</fore> - updates all installed mods");
 			App.WriteLine("- <fore=cyan>u|update [mod]</fore> - updates the specified mod");
+			App.WriteLine("");
 		}
 
 		[CLICommand("fetch", "f")]
@@ -178,6 +184,20 @@ namespace RogueModLoader.ConsoleApp
 			}
 			confirmSent = false;
 			App.WriteLine("<fore=cyan>Started fetching mods' metadata from " + Config.MainRepository + " (" + Config.ListPath + ")...");
+
+			List<Release> releases = new List<Release>(Loader.GitHub.Repository.Release.GetAll(Loader.RepoOwner, Loader.RepoName).Result);
+			Release latestPre = releases[0];
+			Release latest = releases.Find(m => !m.Prerelease) ?? latestPre;
+			if (CurrentVersion != latest.TagName && CurrentVersion != latestPre.TagName)
+			{
+				Release appr = CurrentVersion.StartsWith("v0") || CurrentVersion.Contains("-pre") ? latestPre : latest;
+				App.WriteLine("");
+				App.WriteLine("<fore=black><back=darkyellow>RogueModLoader has a new release \"" + appr.TagName + "\"!");
+				App.WriteLine("<fore=black><back=darkyellow>Download the latest version here:");
+				App.WriteLine("<fore=darkcyan>" + appr.HtmlUrl);
+				App.WriteLine("");
+			}
+
 			try
 			{
 				Loader.FetchInformation().Wait();

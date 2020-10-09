@@ -8,7 +8,7 @@ using System.Xml.Serialization;
 using System.Linq;
 using System.Net;
 
-namespace RogueModLoaderCore
+namespace RogueModLoader.Core
 {
 	public class RogueLoader
 	{

@@ -9,7 +9,7 @@ using AbbLab.FileSystem;
 using Octokit;
 using System.Globalization;
 
-namespace RogueModLoaderCore
+namespace RogueModLoader.Core
 {
 	[XmlRoot("mod")]
 	public class RogueMod : IXmlSerializable

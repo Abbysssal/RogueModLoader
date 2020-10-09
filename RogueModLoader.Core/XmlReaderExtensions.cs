@@ -1,6 +1,6 @@
 ﻿using System.Xml;
 
-namespace RogueModLoaderCore
+namespace RogueModLoader.Core
 {
 	public static class XmlReaderExtensions
 	{
