@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Data;
 using Octokit;
+using System.IO;
 
 namespace RogueModLoader.ConsoleApp
 {
@@ -82,9 +83,19 @@ namespace RogueModLoader.ConsoleApp
 			FileHandle hlapiNetworking = new FileHandle(GameDirectory, "StreetsOfRogue_Data", "Managed", "com.unity.multiplayer-hlapi.Runtime.dll");
 			if (hlapiNetworking.Exists() && !unityNetworking.Exists())
 			{
-				unityNetworking = hlapiNetworking.CopyTo(unityNetworking.Parent);
+				using (FileStream inputFile = new FileStream(hlapiNetworking.FullPath, System.IO.FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				{
+					using (FileStream outputFile = new FileStream(unityNetworking.FullPath, System.IO.FileMode.Create))
+					{
+						byte[] buffer = new byte[0x10000];
+						int bytes;
+						while ((bytes = inputFile.Read(buffer, 0, buffer.Length)) > 0)
+							outputFile.Write(buffer, 0, bytes);
+					}
+				}
 				App.WriteLine("<fore=darkcyan>Created UnityEngine.Networking.dll.");
 				App.WriteLine("<fore=darkcyan>It is required by some mods, that were made on the previous version of Unity.");
+				App.WriteLine("");
 			}
 
 			Loader.ReadXmlData();
