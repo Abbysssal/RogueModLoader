@@ -22,7 +22,7 @@ namespace RogueModLoader.ConsoleApp
 				new DirectoryHandle(@"D:\Steam\steamapps\common\Streets of Rogue\RogueModLoader");
 			App.WriteLine("<back=darkcyan><fore=black>THIS IS DEBUG MODE");
 #else
-				new DirectoryHandle(Directory.GetCurrentDirectory());
+				new DirectoryHandle(System.IO.Directory.GetCurrentDirectory());
 #endif
 			GameDirectory = RMLDirectory.Parent;
 			BIXDirectory = new DirectoryHandle(GameDirectory, "BepInEx");
