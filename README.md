@@ -82,8 +82,12 @@ Now let's look at RogueModLoader.List.rml:
   <repository>Moonkis/SoRFramerateLimiter</repository>
   <repository>RafaRed/RedMod</repository>
   <repository>Abbysssal/CustomLoader</repository>
+  <repository>Freiling87/BunnyMod</repository>
   <repository>SoR-Mods/NPCPrefixes</repository>
   <repository>SoR-Mods/rougebeer</repository>
+  <repository>zTBBz/SMaD</repository>
+  <repository>zTBBz/MTP</repository>
+  <repository>Abbysssal/GiveMeMyNuggetsBack</repository>
 </repositories>
 ```
 It's just a list of mod repositories, that you want to include in your RogueModLoader.
